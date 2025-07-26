@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: modern-snake-game
+    env: python
+    buildCommand: |
+      cd frontend && yarn install && yarn build && cd .. && 
+      cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python server.py
+    envVars:
+      - key: MONGO_URL
+        value: mongodb+srv://Admin:Admin'sBusy@modern-snake-game.uwfx6tg.mongodb.net/?retryWrites=true&w=majority&appName=Modern-Snake-Game
+      - key: DB_NAME
+        value: snake_game_db
+    healthCheckPath: /api/status

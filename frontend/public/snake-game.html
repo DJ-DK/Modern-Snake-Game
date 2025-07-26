@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Snake - Cyberpunk Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            font-family: 'Orbitron', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Cyberpunk Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            animation: gridGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes gridGlow {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0f 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 1s ease-out;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-title {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #00ffff;
+            text-shadow: 
+                0 0 10px #00ffff,
+                0 0 20px #00ffff,
+                0 0 40px #00ffff;
+            margin-bottom: 2rem;
+            animation: titlePulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titlePulse {
+            0% { 
+                text-shadow: 
+                    0 0 10px #00ffff,
+                    0 0 20px #00ffff,
+                    0 0 40px #00ffff;
+            }
+            100% { 
+                text-shadow: 
+                    0 0 20px #00ffff,
+                    0 0 30px #00ffff,
+                    0 0 60px #00ffff,
+                    0 0 80px #ff006f;
+            }
+        }
+
+        .loading-bar-container {
+            width: 400px;
+            height: 6px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 255, 0.5),
+                inset 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff006f, #00ffff);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .loading-text {
+            color: #00ffff;
+            font-size: 1.2rem;
+            opacity: 0.8;
+            animation: fadeInOut 2s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.3; }
+        }
+
+        .start-button {
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1));
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 15px 30px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 2rem;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 255, 0.5),
+                inset 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        .start-button:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.8),
+                inset 0 0 20px rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Game UI */
+        .game-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ffff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .high-score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #ff006f;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px #ff006f;
+        }
+
+        .game-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(0, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .speed-boost-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: #ff006f;
+            font-size: 1rem;
+            font-weight: 700;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            text-shadow: 0 0 10px #ff006f;
+        }
+
+        .speed-boost-indicator.active {
+            opacity: 1;
+        }
+
+        /* Game Over Screen */
+        .game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-over-screen.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .game-over-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #ff006f;
+            text-shadow: 
+                0 0 10px #ff006f,
+                0 0 20px #ff006f,
+                0 0 40px #ff006f;
+            margin-bottom: 1rem;
+        }
+
+        .final-score {
+            font-size: 1.5rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 2rem;
+        }
+
+        .game-buttons {
+            display: flex;
+            gap: 20px;
+        }
+
+        .game-button {
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1));
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 12px 25px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 255, 0.5),
+                inset 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        .game-button:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.8),
+                inset 0 0 20px rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .game-button.secondary {
+            border-color: #ff006f;
+            color: #ff006f;
+            box-shadow: 
+                0 0 10px rgba(255, 0, 111, 0.5),
+                inset 0 0 10px rgba(255, 0, 111, 0.1);
+        }
+
+        .game-button.secondary:hover {
+            background: rgba(255, 0, 111, 0.1);
+            box-shadow: 
+                0 0 20px rgba(255, 0, 111, 0.8),
+                inset 0 0 20px rgba(255, 0, 111, 0.2);
+        }
+
+        /* Pause Menu */
+        .pause-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .pause-menu.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .pause-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 2rem;
+        }
+
+        /* Canvas Container */
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-title">NEON SNAKE</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loadingBar"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Initializing quantum grid...</div>
+        <button class="start-button" id="startButton" style="display: none;">START GAME</button>
+    </div>
+
+    <!-- Game UI -->
+    <div class="game-ui">
+        <div class="score-display">SCORE: <span id="currentScore">0</span></div>
+        <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
+        <div class="game-controls">
+            WASD / ARROWS: Move<br>
+            SPACE / CLICK: Speed Boost<br>
+            P: Pause
+        </div>
+        <div class="speed-boost-indicator" id="speedBoostIndicator">BOOST ACTIVE!</div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div class="game-over-screen" id="gameOverScreen">
+        <div class="game-over-title">GAME OVER</div>
+        <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+        <div class="game-buttons">
+            <button class="game-button" id="playAgainBtn">Play Again</button>
+            <button class="game-button secondary" id="saveGameBtn">Save Progress</button>
+            <button class="game-button secondary" id="loadGameBtn">Load Game</button>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div class="pause-menu" id="pauseMenu">
+        <div class="pause-title">PAUSED</div>
+        <div class="game-buttons">
+            <button class="game-button" id="resumeBtn">Resume</button>
+            <button class="game-button secondary" id="saveBtn">Save & Quit</button>
+            <button class="game-button secondary" id="exportBtn">Export Data</button>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="gameContainer"></div>
+
+    <!-- Phaser.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- API Service -->
+    <script src="snake-api.js"></script>
+    
+    <!-- Game JavaScript -->
+    <script src="snake-game.js"></script>
+</body>
+</html>
